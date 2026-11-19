@@ -10,6 +10,8 @@ homepage: https://github.com/gbbowers/grav-plugin-hardcover
 bugs: https://github.com/gbbowers/grav-plugin-hardcover/issues
 keywords: hardcover, books, reading, widget
 license: MIT
+compatibility:
+  grav: ['2.0']
 dependencies:
   - { name: grav, version: '>=1.7.0' }
 
