@@ -1,0 +1,6 @@
+enabled: true
+token: ''          # Paste your Hardcover API token here, or set HARDCOVER_TOKEN in the server env
+limit: 5           # Max books to show
+cache_minutes: 60  # How long to reuse the cached result before calling the API again
+heading: 'Currently reading'
+built_in_css: true # Load css/hardcover.css; turn off to style it entirely from your theme

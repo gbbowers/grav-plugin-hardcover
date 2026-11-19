@@ -1,0 +1,126 @@
+/* ==========================================================================
+   Hardcover "Currently reading" — starter stylesheet
+   Everything hangs off custom properties on .hc-reading, so you can retheme
+   from your own CSS without touching this file:
+
+     .hc-reading { --hc-accent: var(--brand-green); --hc-cover-w: 64px; }
+   ========================================================================== */
+
+/* 1. Tokens + wrapper  — <section class="hc-reading"> */
+.hc-reading {
+  --hc-gap: 1rem;
+  --hc-cover-w: 72px;
+  --hc-cover-ratio: 2 / 3;
+  --hc-radius: 4px;
+  --hc-text: inherit;
+  --hc-muted: color-mix(in srgb, currentColor 65%, transparent);
+  --hc-accent: currentColor;
+  --hc-track: color-mix(in srgb, currentColor 15%, transparent);
+  --hc-bar-h: 6px;
+  --hc-title-size: 1rem;
+  --hc-author-size: 0.875rem;
+
+  color: var(--hc-text);
+  container-type: inline-size; /* lets the layout respond to its column, not the viewport */
+}
+
+/* 2. Heading  — <h2 id="hc-reading-heading"> */
+.hc-reading > h2 {
+  margin: 0 0 var(--hc-gap);
+  font-size: 1.25rem;
+}
+
+/* 3. List  — <ul class="hc-reading__list"> */
+.hc-reading__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--hc-gap);
+}
+
+/* 4. One book  — <li class="hc-book"> (cover + meta, side by side) */
+.hc-book {
+  display: grid;
+  grid-template-columns: var(--hc-cover-w) 1fr;
+  gap: calc(var(--hc-gap) * 0.75);
+  align-items: start;
+}
+.hc-book:not(:has(.hc-book__cover)) { grid-template-columns: 1fr; } /* no cover from the API */
+
+/* 5. Cover  — <img class="hc-book__cover"> */
+.hc-book__cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--hc-cover-ratio);
+  object-fit: cover;
+  border-radius: var(--hc-radius);
+  background: var(--hc-track); /* placeholder while loading */
+}
+
+/* 6. Text column  — <div class="hc-book__meta"> */
+.hc-book__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0; /* allows long titles to wrap/clamp inside the grid */
+}
+
+/* 7. Title  — <a> when there's a Hardcover link, <span> otherwise */
+.hc-book__title {
+  font-size: var(--hc-title-size);
+  font-weight: 600;
+  line-height: 1.3;
+  color: inherit;
+  text-decoration: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+a.hc-book__title:hover { text-decoration: underline; }
+a.hc-book__title:focus-visible {
+  outline: 2px solid var(--hc-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 8. Author  — <span class="hc-book__author"> */
+.hc-book__author {
+  font-size: var(--hc-author-size);
+  color: var(--hc-muted);
+}
+
+/* 9. Progress  — <progress class="hc-book__progress"> (needs per-engine pseudo-elements) */
+.hc-book__progress {
+  appearance: none;
+  width: 100%;
+  height: var(--hc-bar-h);
+  margin-top: 0.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--hc-track);
+  color: var(--hc-accent); /* older Edge/IE */
+  overflow: hidden;
+}
+.hc-book__progress::-webkit-progress-bar   { background: var(--hc-track); border-radius: 999px; }
+.hc-book__progress::-webkit-progress-value { background: var(--hc-accent); border-radius: 999px; }
+.hc-book__progress::-moz-progress-bar      { background: var(--hc-accent); border-radius: 999px; }
+
+/* 10. Layout variant: covers in a row once the container is wide enough.
+       Delete this block if you want the stacked list everywhere. */
+@container (min-width: 36rem) {
+  .hc-reading__list {
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  }
+  .hc-book {
+    grid-template-columns: 1fr;
+  }
+  .hc-reading { --hc-cover-w: 100%; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hc-book__cover { transition: transform 150ms ease; }
+  .hc-book:hover .hc-book__cover { transform: translateY(-2px); }
+}
