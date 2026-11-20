@@ -6,7 +6,7 @@
     {% for b in books %}
     <li class="hc-book">
       {% if b.cover %}
-        <img class="hc-book__cover" src="{{ b.cover }}" alt="" loading="lazy" width="80">
+        <img class="hc-book__cover" src="{{ b.cover }}" alt="Cover of the book '{{ b.title }}'" loading="lazy" width="80">
       {% endif %}
       <div class="hc-book__meta">
         {% if b.url %}
