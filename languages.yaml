@@ -1,0 +1,12 @@
+en:
+  PLUGIN_HARDCOVER:
+    TOKEN: API token
+    TOKEN_HELP: From hardcover.app → Settings → API. With or without the "Bearer " prefix.
+    LIMIT: Max books
+    CACHE_MINUTES: Cache (minutes)
+    CACHE_MINUTES_HELP: How long to reuse the last result before asking Hardcover again. After a failed request the plugin waits 5 minutes before retrying.
+    HEADING: Heading
+    HEADING_HELP: Leave empty to use the default, translated heading.
+    DEFAULT_HEADING: Currently reading
+    BUILT_IN_CSS: Use built-in CSS
+    BUILT_IN_CSS_HELP: Loads css/hardcover.css on pages that show the widget. Turn off to style it from your theme.

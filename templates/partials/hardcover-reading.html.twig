@@ -1,12 +1,15 @@
 {% set books = hardcover_reading() %}
 {% if books %}
+{% if config.plugins.hardcover.built_in_css ?? true %}
+  {% do assets.addCss('plugin://hardcover/css/hardcover.css') %}
+{% endif %}
 <section class="hc-reading" aria-labelledby="hc-reading-heading">
-  <h2 id="hc-reading-heading">{{ config.plugins.hardcover.heading|default('Currently reading') }}</h2>
+  <h2 id="hc-reading-heading">{{ config.plugins.hardcover.heading|default('PLUGIN_HARDCOVER.DEFAULT_HEADING'|t) }}</h2>
   <ul class="hc-reading__list">
     {% for b in books %}
     <li class="hc-book">
       {% if b.cover %}
-        <img class="hc-book__cover" src="{{ b.cover }}" alt="Cover of the book '{{ b.title }}'" loading="lazy" width="80">
+        <img class="hc-book__cover" src="{{ b.cover }}" alt="Cover of the book '{{ b.title }}'" loading="lazy" width="80" height="120">
       {% endif %}
       <div class="hc-book__meta">
         {% if b.url %}

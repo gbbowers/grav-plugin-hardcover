@@ -15,12 +15,18 @@ use Twig\TwigFunction;
  */
 class HardcoverPlugin extends Plugin
 {
+    const VERSION  = '1.1.1'; // keep in sync with blueprints.yaml
     const ENDPOINT = 'https://api.hardcover.app/v1/graphql';
+    const BACKOFF  = 300;     // seconds to wait before retrying after a failed fetch
 
     const QUERY = <<<'GQL'
 query CurrentlyReading($limit: Int!) {
   me {
-    user_books(where: {status_id: {_eq: 2}}, limit: $limit) {
+    user_books(
+      where: {status_id: {_eq: 2}}
+      order_by: [{date_added: desc}, {id: desc}]
+      limit: $limit
+    ) {
       book {
         title
         slug
@@ -49,15 +55,7 @@ GQL;
             'onTwigTemplatePaths' => ['onTwigTemplatePaths', 0],
             'onTwigInitialized'   => ['onTwigInitialized', 0],
             'onShortcodeHandlers' => ['onShortcodeHandlers', 0],
-            'onTwigSiteVariables' => ['onTwigSiteVariables', 0],
         ]);
-    }
-
-    public function onTwigSiteVariables(): void
-    {
-        if ($this->config->get('plugins.hardcover.built_in_css', true)) {
-            $this->grav['assets']->addCss('plugin://hardcover/css/hardcover.css');
-        }
     }
 
     /**
@@ -91,25 +89,52 @@ GQL;
         $file  = $this->cacheFile();
         $stale = null;
 
+        // The cache file's mtime means "valid until mtime + ttl". Failures and
+        // in-flight fetches move the mtime so the file expires sooner or later.
         if (is_file($file)) {
             $stale = json_decode((string)file_get_contents($file), true);
             if (is_array($stale) && (time() - filemtime($file)) < $ttl) {
                 return $stale;
             }
         }
+        $stale = is_array($stale) ? $stale : [];
+
+        // Only one request refreshes at a time; the rest serve the stale copy.
+        $lock = @fopen($file . '.lock', 'c');
+        if ($lock && !flock($lock, LOCK_EX | LOCK_NB)) {
+            fclose($lock);
+            return $stale;
+        }
+
+        // Claim the refresh before calling the API: mark the cache valid for a
+        // little longer than the request can take, so pages rendered meanwhile
+        // don't start their own fetch. Creates the file on a fresh install.
+        if (!is_file($file)) {
+            @file_put_contents($file, '[]', LOCK_EX);
+        }
+        $this->expireIn($file, $ttl, 30);
 
         $fresh = $this->fetch($cfg);
         if ($fresh === null) {
-            // API failed: serve the last good copy, and touch it so we don't
-            // hammer the API on every page view while it's down.
-            if (is_file($file)) {
-                @touch($file);
-            }
-            return is_array($stale) ? $stale : [];
+            // No token, expired token, or API down: keep whatever we had (an
+            // empty list on a fresh install) and retry after the backoff.
+            $this->expireIn($file, $ttl, self::BACKOFF);
+        } else {
+            @file_put_contents($file, json_encode($fresh), LOCK_EX);
         }
 
-        @file_put_contents($file, json_encode($fresh), LOCK_EX);
-        return $fresh;
+        if ($lock) {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+        return $fresh ?? $stale;
+    }
+
+    /** Set the cache file's mtime so it expires $seconds from now (never later than a full ttl). */
+    private function expireIn(string $file, int $ttl, int $seconds): void
+    {
+        @touch($file, time() - $ttl + min($seconds, $ttl));
+        clearstatcache(true, $file);
     }
 
     private function fetch(array $cfg): ?array
@@ -122,6 +147,11 @@ GQL;
         // Accept the token with or without the "Bearer " prefix Hardcover shows.
         if (stripos($token, 'bearer ') !== 0) {
             $token = 'Bearer ' . $token;
+        }
+
+        if (!function_exists('curl_init')) {
+            $this->grav['log']->error('hardcover: the PHP curl extension is required');
+            return null;
         }
 
         $payload = json_encode([
@@ -139,7 +169,7 @@ GQL;
             CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Authorization: ' . $token,
-                'User-Agent: grav-plugin-hardcover/1.0',
+                'User-Agent: grav-plugin-hardcover/' . self::VERSION,
             ],
         ]);
         $body   = curl_exec($ch);

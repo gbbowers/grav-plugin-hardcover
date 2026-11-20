@@ -5,6 +5,11 @@ PHP on your server, so the token never reaches visitors. Results are cached
 to `user/data/hardcover/currently-reading.json`, and if the API is down the
 last good copy is served.
 
+## Requirements
+
+- Grav 2.0 or later
+- PHP's curl extension (the widget stays empty and Grav logs an error without it)
+
 ## Install
 
 1. Copy this folder to `user/plugins/hardcover/`. The folder must be named
@@ -44,6 +49,13 @@ To override the partial, copy it to
 
 ## Notes
 
+- Books are listed by when you added them to your Hardcover library, newest first.
+- The built-in stylesheet is only loaded on pages that show the widget. If you
+  use the shortcode on a page with caching left on, the cached copy of the
+  page won't load it; that's one more reason to turn caching off there.
+- If a request fails (no token, expired token, Hardcover down), the plugin
+  keeps showing the last list it had, or nothing on a fresh install, and tries
+  again after 5 minutes.
 - Changes on Hardcover show up after `cache_minutes` (default 60). To force a
   refresh, delete the JSON file above.
 - Hardcover API tokens expire periodically. When yours does, the widget keeps
